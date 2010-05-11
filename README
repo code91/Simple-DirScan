@@ -1,0 +1,18 @@
+
+Developer: code <at> insicuri <dot> net
+
+Description:
+A simply directories scanner.
+The tool checks out if a certain page or folder exist on a certain server.
+
+Installation:
+The tool required some modules.
+To resolve module dependences, simply type in your terminal:
+cpan
+install HTTP::Request
+install Getopt::Long
+install LWP::UserAgent
+quit
+
+After that you are able to run the tool typing:
+perl dirscan

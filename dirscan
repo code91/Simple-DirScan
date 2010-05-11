@@ -1,0 +1,131 @@
+#!/usr/bin/perl
+
+use strict;
+
+use LWP::UserAgent;
+use HTTP::Request;
+use Getopt::Long;
+
+my $site = $ARGV[0];
+my %options = ();
+GetOptions(\%options, "i=s", "p=s", "e=s");
+
+if (!$site) 
+{ 
+	print q 
+	{
+		================================================================================
+
+		# title:         Simple Directories Scanner
+		# developer:     code91
+		# e-mail:        < code[at]insicuri[dot]net >   
+
+		Usage:	
+			perl dirscan [site] {options}
+
+		Options:
+			-i [path] define your pathlist file.
+         		-p [ip:port] scan with proxy support.
+         		-e [ext1-ext2] define extensions.          
+		================================================================================
+
+	};
+	exit 2;
+}
+else 
+{
+	print "\n[+] Performing url...\n";
+	if( $site !~ /http:\/\// )
+	{ 
+		$site = "http://".$site;
+	}
+
+	my $ua = LWP::UserAgent->new();
+
+	print "[+] Loading pathlist...\n";
+	my( $path, @list );
+	if( $options{"i"} ) 
+	{
+		$path = $options{"i"};     
+	  	open(FP, $path) or die ("[-] Unable to open file in <$path> path.\n");        
+		@list = <FP>;
+	        chomp(@list);
+	} 
+	else 
+	{    
+		@list = qw ( index forum home sources profile 0days 4dm1n Files files file File Forums forumForum Forumz forums Forums private vti_bin  
+                             vti_cnf _vti_pvt admin admin asp audio bin binary cfg cgi-bin cgi-local conf config cpanel cpp cutenews cute data 
+                             database db etc forum f0rum home iissamples image images Image Images include lib log logs misx movies movs movie mov mp3s
+                             msadc music news old oldsite perl php-bin php private prog progs programs public pvt pwd save saved saved.txt  save.txt
+                             save.log  saved.log secret secrets LIB Lib scripts software sound src tar  topics warez cmps scripts programsandscripts 
+                             programs paid Paid );
+	}
+
+	if( $options{"p"} )
+	{
+        	$ua->proxy('http', "http://".$options{"p"});
+        	print "\n[+] Scanning with proxy...\n"; 
+	}
+	else 
+	{
+		$ua->no_proxy('127.0.0.1');
+	    	print "\n[+] Scanning without proxy...\n";
+	}
+	    
+	my @ext;
+	if( $options{"e"} ) 
+	{
+	    print "[+] Scanning with defined extensions...\n";      
+	    @ext = split( /-/, $options{"e"} ); 
+	} 
+	else 
+	{  
+		print "[+] Scanning with default extensions...\n";
+        	@ext = qw ( html php ); 
+	}
+                
+	my( $word, $ext, $results );    
+	foreach $word( @list ) 
+	{
+		foreach $ext( @ext ) 
+		{ 
+			$results = $ua->get( "$site/$word.$ext" );
+        		print "\n[+] Trying: $word.$ext...";
+        
+        		if( $results->is_success ) 
+			{ 
+				print " ---> Page found: $word.$ext. \n";
+			}
+               
+        		elsif( ($results->is_success) && ($results->status_line eq "403 Forbidden") ) 
+ 			{ 
+        	        	print " --> Restricted access page found: $word.$ext.\n"; 
+			}
+        	                                               
+       			elsif( ($results->is_success) && ($results->status_line eq "404") )   
+			{ 
+				print " --> 404. Page not found.\n"; 
+			}
+        	                                               
+       			else 
+			{
+				print " --> $word.$ext not found on the target site.\n"; 
+			}
+		}
+        
+       		$results = $ua->get( "$site/$word/" );
+        	print "\n[+] Scanning for $word folder...";
+        
+        	if( $results->is_success ) 
+		{ 
+			print " ---> Directory found: $word \n"; 
+		}
+        
+       		else 
+		{ 
+			print " --> $word is not a directory on the server.\n";
+		}
+	}
+        
+	exit; 
+}
